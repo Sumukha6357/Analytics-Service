@@ -1,0 +1,16 @@
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+
+  api:
+    ports:
+      - "${API_PORT}:9100"
+
+  web:
+    ports:
+      - "${WEB_PORT}:3000"

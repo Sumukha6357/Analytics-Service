@@ -1,0 +1,21 @@
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+
+  api:
+    environment:
+      APP_ENV: dev
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "${API_PORT}:9100"
+
+  web:
+    environment:
+      APP_ENV: dev
+    ports:
+      - "${WEB_PORT}:3000"

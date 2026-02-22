@@ -1,0 +1,10 @@
+.git
+.qodo
+**/node_modules
+**/.next
+**/target
+**/.idea
+**/.vscode
+**/dist
+**/build
+**/*.log

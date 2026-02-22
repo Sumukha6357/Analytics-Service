@@ -1,0 +1,38 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local assistant/tooling metadata
+.qodo/
+
+# Environment and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / Next.js
+node_modules/
+web/.next/
+web/out/
+web/coverage/
+
+# Java / Maven
+api/target/
+
+# Misc build/cache
+dist/
+build/
+.cache/
+.turbo/
+coverage/

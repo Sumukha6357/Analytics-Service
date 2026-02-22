@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT:9100}
+
+spring:
+  application:
+    name: analytics
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/analytics}
+    username: ${DB_USER:analytics}
+    password: ${DB_PASS:analytics}
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 6
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    locations: classpath:db/migration
+  cache:
+    type: ${CACHE_TYPE:simple}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+analytics:
+  retention-raw-days: ${RETENTION_RAW_DAYS:30}
+  rate-limit-events-per-min: ${RATE_LIMIT_EVENTS_PER_MIN:6000}
+  max-batch-size: ${MAX_BATCH_SIZE:100}
+  max-event-bytes: ${MAX_EVENT_BYTES:65536}
+  max-properties-bytes: ${MAX_PROPERTIES_BYTES:49152}
+  worker-concurrency: ${WORKER_CONCURRENCY:4}
+  partition-precreate-days: ${PARTITION_PRECREATE_DAYS:7}
+  job-lock-ttl-seconds: ${JOB_LOCK_TTL_SECONDS:120}
+  job-backoff-base-seconds: ${JOB_BACKOFF_BASE_SECONDS:2}
+  revenue-event-name: ${REVENUE_EVENT_NAME:OrderPlaced}
+  enable-gin-properties: ${ENABLE_GIN_PROPERTIES:false}
+  admin-api-key: ${ADMIN_API_KEY:change-me}

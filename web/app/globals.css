@@ -1,0 +1,70 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 13% 11%;
+  --foreground: 210 20% 95%;
+  --card: 222 16% 14%;
+  --card-foreground: 210 18% 94%;
+  --muted: 223 16% 18%;
+  --muted-foreground: 215 14% 66%;
+  --border: 222 15% 24%;
+  --input: 223 16% 19%;
+  --ring: 199 89% 58%;
+  --primary: 197 89% 56%;
+  --primary-foreground: 222 47% 11%;
+  --success: 142 60% 50%;
+  --danger: 3 78% 61%;
+  --warning: 39 95% 60%;
+}
+
+.light {
+  --background: 210 20% 98%;
+  --foreground: 214 24% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 214 24% 14%;
+  --muted: 210 20% 95%;
+  --muted-foreground: 215 12% 42%;
+  --border: 214 18% 90%;
+  --input: 214 20% 88%;
+  --ring: 210 90% 46%;
+  --primary: 210 88% 42%;
+  --primary-foreground: 210 40% 98%;
+  --success: 145 66% 35%;
+  --danger: 2 68% 50%;
+  --warning: 35 80% 50%;
+}
+
+* {
+  @apply border-border;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.enterprise-grid {
+  @apply grid grid-cols-1 gap-4 md:grid-cols-12;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 999px;
+  border: 2px solid transparent;
+}

@@ -1,0 +1,113 @@
+name: analytics-server
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  flyway:
+    image: flyway/flyway:10.20.1-alpine
+    command:
+      - -url=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      - -user=${POSTGRES_USER}
+      - -password=${POSTGRES_PASSWORD}
+      - -connectRetries=60
+      - -baselineOnMigrate=false
+      - -validateOnMigrate=true
+      - -locations=filesystem:/flyway/sql
+      - migrate
+    volumes:
+      - ./api/src/main/resources/db/migration:/flyway/sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: 9100
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      DB_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      CACHE_TYPE: ${CACHE_TYPE}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_TIMEOUT: ${REDIS_TIMEOUT}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      RATE_LIMIT_EVENTS_PER_MIN: ${RATE_LIMIT_EVENTS_PER_MIN}
+      RETENTION_RAW_DAYS: ${RETENTION_RAW_DAYS}
+      MAX_BATCH_SIZE: ${MAX_BATCH_SIZE}
+      MAX_EVENT_BYTES: ${MAX_EVENT_BYTES}
+      MAX_PROPERTIES_BYTES: ${MAX_PROPERTIES_BYTES}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY}
+      PARTITION_PRECREATE_DAYS: ${PARTITION_PRECREATE_DAYS}
+      JOB_LOCK_TTL_SECONDS: ${JOB_LOCK_TTL_SECONDS}
+      JOB_BACKOFF_BASE_SECONDS: ${JOB_BACKOFF_BASE_SECONDS}
+      REVENUE_EVENT_NAME: ${REVENUE_EVENT_NAME}
+      ENABLE_GIN_PROPERTIES: ${ENABLE_GIN_PROPERTIES}
+      JWT_SECRET: ${JWT_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9100/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ANALYTICS_API_URL: http://api:9100
+      ANALYTICS_API_KEY: ${ANALYTICS_API_KEY}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+      NEXT_PUBLIC_ANALYTICS_ORGS: ${NEXT_PUBLIC_ANALYTICS_ORGS}
+      APP_ENV: ${APP_ENV}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:
