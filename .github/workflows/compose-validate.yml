@@ -1,0 +1,43 @@
+name: Compose Validate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "docker-compose*.yml"
+      - ".env.example"
+      - ".github/workflows/compose-validate.yml"
+  pull_request:
+    paths:
+      - "docker-compose*.yml"
+      - ".env.example"
+      - ".github/workflows/compose-validate.yml"
+
+concurrency:
+  group: compose-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare env file
+        run: cp .env.example .env
+
+      - name: Validate base compose
+        run: docker compose -f docker-compose.yml config
+
+      - name: Validate local compose
+        run: docker compose -f docker-compose.yml -f docker-compose.local.yml config
+
+      - name: Validate dev compose
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config
+
+      - name: Validate prod compose
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config
