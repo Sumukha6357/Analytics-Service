@@ -20,6 +20,13 @@ CREATE TABLE tenant_api_keys (
     revoked_at TIMESTAMPTZ
 );
 
+CREATE TABLE event_dedup_keys (
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    event_uuid UUID NOT NULL,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (tenant_id, event_uuid)
+);
+
 CREATE SEQUENCE events_raw_id_seq;
 
 CREATE TABLE events_raw (
@@ -44,9 +51,6 @@ CREATE INDEX idx_events_raw_tenant_received ON events_raw (tenant_id, received_a
 CREATE INDEX idx_events_raw_tenant_event_received ON events_raw (tenant_id, event_name, received_at DESC);
 CREATE INDEX idx_events_raw_tenant_user_received ON events_raw (tenant_id, user_id, received_at DESC);
 CREATE INDEX idx_events_raw_tenant_event_ts ON events_raw (tenant_id, event_ts DESC);
-CREATE UNIQUE INDEX uq_events_raw_tenant_event_uuid
-    ON events_raw (tenant_id, event_uuid)
-    WHERE event_uuid IS NOT NULL;
 
 CREATE TABLE ingestion_idempotency (
     tenant_id UUID NOT NULL,

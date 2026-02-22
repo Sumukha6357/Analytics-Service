@@ -3,12 +3,9 @@ package com.example.analytics.repo;
 import com.example.analytics.model.EventWriteModel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,47 +29,47 @@ public class EventsRepository {
 
     public InsertResult insertEvents(Collection<EventWriteModel> events) {
         EventWriteModel[] rows = events.toArray(EventWriteModel[]::new);
-        int[] result = jdbcTemplate.batchUpdate("""
+        int accepted = 0;
+        Set<Instant> minuteBuckets = new LinkedHashSet<>();
+        Set<LocalDate> days = new LinkedHashSet<>();
+
+        for (EventWriteModel row : rows) {
+            int dedupClaim = jdbcTemplate.update("""
+                    INSERT INTO event_dedup_keys (tenant_id, event_uuid, first_seen_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (tenant_id, event_uuid) DO NOTHING
+                    """, row.tenantId(), row.eventUuid(), Timestamp.from(row.receivedAt()));
+            if (dedupClaim == 0) {
+                continue;
+            }
+
+            int inserted = jdbcTemplate.update("""
                 INSERT INTO events_raw
                 (tenant_id, received_at, event_ts, event_name, user_id, anonymous_id, session_id, event_uuid,
                  schema_version, properties, context, idempotency_key, ingestion_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?)
-                ON CONFLICT (tenant_id, event_uuid) WHERE event_uuid IS NOT NULL DO NOTHING
-                """, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                EventWriteModel e = rows[i];
-                ps.setObject(1, e.tenantId());
-                ps.setTimestamp(2, Timestamp.from(e.receivedAt()));
-                ps.setTimestamp(3, Timestamp.from(e.eventTs()));
-                ps.setString(4, e.eventName());
-                ps.setString(5, e.userId());
-                ps.setString(6, e.anonymousId());
-                ps.setString(7, e.sessionId());
-                ps.setObject(8, e.eventUuid());
-                ps.setInt(9, e.schemaVersion());
-                ps.setString(10, toJson(e.properties()));
-                ps.setString(11, toJson(e.context()));
-                ps.setString(12, e.idempotencyKey());
-                ps.setObject(13, e.ingestionId());
-            }
+                """,
+                    row.tenantId(),
+                    Timestamp.from(row.receivedAt()),
+                    Timestamp.from(row.eventTs()),
+                    row.eventName(),
+                    row.userId(),
+                    row.anonymousId(),
+                    row.sessionId(),
+                    row.eventUuid(),
+                    row.schemaVersion(),
+                    toJson(row.properties()),
+                    toJson(row.context()),
+                    row.idempotencyKey(),
+                    row.ingestionId());
 
-            @Override
-            public int getBatchSize() {
-                return rows.length;
-            }
-        });
-
-        int accepted = 0;
-        Set<Instant> minuteBuckets = new LinkedHashSet<>();
-        Set<LocalDate> days = new LinkedHashSet<>();
-        for (int i = 0; i < result.length; i++) {
-            if (result[i] > 0) {
+            if (inserted > 0) {
                 accepted++;
-                minuteBuckets.add(rows[i].receivedAt().truncatedTo(java.time.temporal.ChronoUnit.MINUTES));
-                days.add(rows[i].eventTs().atZone(ZoneOffset.UTC).toLocalDate());
+                minuteBuckets.add(row.receivedAt().truncatedTo(java.time.temporal.ChronoUnit.MINUTES));
+                days.add(row.eventTs().atZone(ZoneOffset.UTC).toLocalDate());
             }
         }
+
         return new InsertResult(accepted, rows.length - accepted, minuteBuckets, days);
     }
 
