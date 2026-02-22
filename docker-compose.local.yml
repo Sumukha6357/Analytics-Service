@@ -9,8 +9,9 @@ services:
 
   api:
     ports:
-      - "${API_PORT}:9100"
+      - "${API_PORT}:${API_PORT}"
 
   web:
     ports:
-      - "${WEB_PORT}:3000"
+      - "${WEB_PORT}:${WEB_PORT}"
+

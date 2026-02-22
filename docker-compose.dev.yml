@@ -12,10 +12,11 @@ services:
       APP_ENV: dev
       SPRING_PROFILES_ACTIVE: dev
     ports:
-      - "${API_PORT}:9100"
+      - "${API_PORT}:${API_PORT}"
 
   web:
     environment:
       APP_ENV: dev
     ports:
-      - "${WEB_PORT}:3000"
+      - "${WEB_PORT}:${WEB_PORT}"
+

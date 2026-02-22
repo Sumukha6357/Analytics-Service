@@ -49,7 +49,7 @@ services:
       context: ./api
       dockerfile: Dockerfile
     environment:
-      SERVER_PORT: 9100
+      SERVER_PORT: ${API_PORT}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       DB_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -82,7 +82,7 @@ services:
       flyway:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9100/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${API_PORT}/actuator/health || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
@@ -93,8 +93,8 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
-      PORT: 3000
-      ANALYTICS_API_URL: http://api:9100
+      PORT: ${WEB_PORT}
+      ANALYTICS_API_URL: http://api:${API_PORT}
       ANALYTICS_API_KEY: ${ANALYTICS_API_KEY}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
       NEXT_PUBLIC_ANALYTICS_ORGS: ${NEXT_PUBLIC_ANALYTICS_ORGS}
@@ -103,7 +103,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:${WEB_PORT}').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 15s
       timeout: 5s
       retries: 20

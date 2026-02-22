@@ -24,4 +24,5 @@ services:
       APP_ENV: prod
       NODE_ENV: production
     ports:
-      - "${WEB_PORT}:3000"
+      - "${WEB_PORT}:${WEB_PORT}"
+
